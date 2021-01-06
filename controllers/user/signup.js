@@ -1,8 +1,7 @@
-
-const {getUser} = require('../../models/get-user');
-const {setUser} = require("../../models/set-user");
+const bcrypt = require('bcryptjs');
+const {db} = require("../../models/googlefirestore");
 const {hashPass} = require("../../models/hash-password");
-const HttpError = require('../../models/http-error');
+const {sendSignUpMessage} = require("../../utils/mailing-service");
 
 const signup = async(req, res, next) => {
     const {
@@ -11,26 +10,48 @@ const signup = async(req, res, next) => {
         name,
     } = req.body;
 
+    const hash = hashPass(password);
    
     try{
-        const user = await getUser(email);
-        if(user) {
-            throw new HttpError("Email exist email", 404);
+        let userCollection = db.collection('users');
+        let userRef = await userCollection.where('email', '==', email).get();
+        if(!userRef.empty) {
+            res.status(500).json({error: 'Email already exist'});
+            return;
         }
-        //password hash
-        const hashedPassword = hashPass(password)
-        const addUser = await setUser(email, hashedPassword, name);
-        if(!addUser) {
-            throw new HttpError("Something went wrong", 404);
-        }
-
-        res.status(200).json({
-            message: `User created ${addUser}`
-        });
+        setUser(res, email, hash, name);
     } catch(e) {
-        // throw new HttpError(e, 404);
-       console.log(e)
+        res.status(500).json({error: 'Email already exist'});
     }
+}
+
+async function setUser(res, email, password, name) {
+    //generate random number to pass on databas and email
+    const code = Math.floor(100000 + Math.random() * 900000);
+    try{
+        let resUser = await db.collection('users').add({
+            email,
+            password,
+            name,
+            verified: false,
+            code: code, // random number genrate to send it to user
+            adddress: {
+                address:'',
+                city: '',
+                state: '',
+                zip: '',
+            }
+        })
+        //send the email to user with code
+        await sendSignUpMessage( email, code);
+        res.status(200).json({
+            message: `user has been created ${resUser.id}`,
+        
+        });
+    }catch {
+        res.status(500).json({error: 'Database erro send email to admin'});
+    }
+
 }
 
 exports.signup = signup;

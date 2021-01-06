@@ -5,9 +5,10 @@ const hashPass = (password) => {
     return bcrypt.hashSync(password, salt);
 }
 
-const hashCompare = (storedPass, newPass) => {
+const hashCompare = (newPass, storedPass) => {
    return bcrypt.compareSync(newPass, storedPass);
 }
+
 
 exports.hashPass = hashPass;
 exports.hashCompare = hashCompare;
