@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const {db} = require("../../models/googlefirestore");
 const {hashPass} = require("../../models/hash-password");
-const {sendSignUpMessage} = require("../../utils/mailing-service");
+// const {sendSignUpMessage} = require("../../utils/mailing-service");
 
 const signup = async(req, res, next) => {
     const {
@@ -10,7 +10,7 @@ const signup = async(req, res, next) => {
         name,
     } = req.body;
 
-    const hash = hashPass(password);
+    const hash = await hashPass(password);
    
     try{
         let userCollection = db.collection('users');
@@ -44,6 +44,7 @@ async function setUser(res, email, password, name) {
         })
         //send the email to user with code
         await sendSignUpMessage( email, code);
+        //set a cookie to store email here and to verify the eamiled code for user
         res.status(200).json({
             message: `user has been created ${resUser.id}`,
         
