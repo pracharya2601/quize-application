@@ -30,27 +30,30 @@ app.use(helmet());
 app.use(hpp());
 app.use(bodyParser.json());
 // app.use(csurf());
-
+app.set('trust proxy', 1) 
 app.use(
   session({
     store: new FirestoreStore({
       dataset: db,
       kind: 'express-sessions',
-
     }),
+    
     secret: 'my-secret',
-    resave: false,
-    saveUninitialized: false,
+    resave: true,
+    saveUninitialized: true,
+    proxy: true,
     cookie: {
       httpOnly: true,
-      originalMaxAge: 3600000,
+      expires: new Date(Date.now() + 6600000),
+      maxAge: 6600000,
+      genid: function(req) {return genuuid()},
     },
   })
 );
 
 
 app.use("/api/user", userRoutes);
-// app.use("/api/quize", quizeRoutes);
+app.use("/api/quize", quizeRoutes);
 
 
 app.use((req, res, next) => {

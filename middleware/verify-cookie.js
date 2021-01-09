@@ -1,25 +1,27 @@
-const {db} = require('./googlefirestore');
+const {db} = require("../models/googlefirestore");
 var jwt = require('jsonwebtoken');
 
 const verifyToken = async (req, res, next) => {
-    const authToken = req.cookie.token;
-    jwt.verifyToken(authToken,"user_world", (err, data) => {
-        if(err) {
-            res.status(403).json(err);
-        }
-        else if(data.uid) {
-            let user = await db.collection('users').doc(data.uid).get();
-            if(!user.exists) {
-                res.status(500).json({error: "Server error. PLease try again later"})
-                //send message to admin about user databse error;
-            }
-            else {
-                let userData = user.data();
-                req.uid = data.uid;
-                req.name = userData.name;
-                req.email = userData.email;
-                next();
-            }
-        }
-    })
+
+    if(!req.session.user) {
+        res.status(403).json({error: "Not authorized"});
+        return;
+    }
+    const token = req.session.user;
+    const decoded = jwt.verify(token, "user_world");
+
+    try{
+        const userData = await db.collection('users').doc(decoded.uid).get();
+        console.log(userData.data());
+        const doc = userData.data();
+        req.user.uid = decoded.uid;
+        req.user.email = doc.email;
+        req.user.name = doc.name;
+        req.user.avatar = doc.avatar;
+        return next();
+    } catch(e) {
+        res.status(403).json({error: "Not authorized"})
+    }
 }
+
+exports.verifyToken = verifyToken;   

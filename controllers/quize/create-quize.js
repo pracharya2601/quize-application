@@ -1,26 +1,34 @@
-const admin = require('firebase-admin');
-const db = admin.firestore();
-
-const HttpError = require('../../models/http-error');
+const {validationResult} = require("express-validator");
+const {db} = require("../../models/googlefirestore");
 
 const createQuize =async (req, res, next) => {
     const {
         question,
         answer,
-        options
+        options,
+        level,
     } = req.body;
+    const errors = validationResult(req);
+    if(!errors.isEmpty()) {
+        res.status(400).json(errors);
+        return;
+    }
+    const newOptions = options.map((str) => ({name: str, value: str}))
 
+    //make sure to verify the user is admin to create a quize
+try{
     const resRef = db.collection("quizes");
     const data = await resRef.add({
         question,
         answer,
-        options,
+        options: [...newOptions, {name: answer, value: answer}],
+        level,
+        dateCreated: new Date().toISOString(),
     })
-    if(!data) {
-        throw new HttpError("Cannot added your data please try again later", 404);
-    }
-
-    res.status(200).json(data);
+    res.status(200).json({message:`Quize created with quizeId ${data.id}`})
+}catch(e) {
+    res.status(400).json({error: "Error occured"})
+}
 }
 
 exports.createQuize = createQuize;

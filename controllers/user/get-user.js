@@ -9,6 +9,7 @@ const current_user = async (req, res, next) => {
         })
         return;
     }   
+    console.log(req.sessionID);
     const token = req.session.user;
     const decoded = jwt.verify(token, "user_world");
     try {
@@ -18,7 +19,6 @@ const current_user = async (req, res, next) => {
             name: userData.data().name,
             address: userData.data().address,
         }
-        console.log(user)
         res.status(200).json({
             signIn: true,
             user: user,

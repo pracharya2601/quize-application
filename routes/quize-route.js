@@ -1,19 +1,41 @@
-// const express = require("express");
-// const router = express.Router();
+const express = require("express");
+const {body} = require('express-validator');
+const router = express.Router();
 // //import controller
-// const {getQuize} = require("../controllers/quize/quize");
-// const { createQuize } = require("../controllers/quize/create-quize");
-// const {getSingleQuize} = require("../controllers/quize/single-quize")
-// const {updateQuize} = require("../controllers/quize/update-quize");
-// const { deleteQuize } = require("../controllers/quize/delete-quize");
+const { createQuize } = require("../controllers/quize/create-quize");
+const { getSingleQuize } = require("../controllers/quize/get-single-quize");
+const { playQuize } = require("../controllers/quize/play-quize");
+const { submitAnswer } = require("../controllers/quize/submit-answer");
+
 
 
 
 
 // router.get('/', getQuize);
-// router.post('/', createQuize);
-// router.get('/:quizeId', getSingleQuize);
-// router.patch("/:quizeId", updateQuize);
-// router.delete("/:quizeId", deleteQuize);
+router.post('/', [
+    body("question")
+        .not()
+        .isEmpty()
+        .withMessage("Must not be empty"),
+    body("level")
+        .not()
+        .isEmpty()
+        .withMessage("Must not be empty"),
+    body("answer")
+        .not()
+        .isEmpty()
+        .withMessage("Must not be empty"),
+    body("options")
+        .not()
+        .isEmpty()
+        .withMessage("Must not be empty"),
+], createQuize);
 
-// module.exports = router;
+router.get('/play_quize', playQuize);
+
+router.get('play_quize/:quizeSlug', getSingleQuize);
+
+//need to validate with express validator
+router.post('play_quize/:quizeSlug', submitAnswer);
+
+module.exports = router;
