@@ -31,7 +31,7 @@
 //     }
 // }
 const sgMail = require('@sendgrid/mail');
-sgMail.setApiKey('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');
+sgMail.setApiKey(process.env.SENDGRID_API);
 
 
 const sendSignUpMessage =async (email, code) => {

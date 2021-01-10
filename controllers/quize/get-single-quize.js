@@ -13,8 +13,13 @@ const getSingleQuize = async (req, res, next) => {
     const token = req.session.user;
     const decoded = jwt.verify(token, "user_world");
 
-    const userRef = db.collection('users').doc(decoded.uid);
-    const quizeRef = db.collection('quizes').doc(quizeSlug);
+    const userRef = db
+        .collection('users')
+        .doc(decoded.uid);
+
+    const quizeRef = db
+        .collection('quizes')
+        .doc(quizeSlug);
 
     const get_quize = async () => {
         const doc = await quizeRef.get();
@@ -25,17 +30,16 @@ const getSingleQuize = async (req, res, next) => {
         }
 
     }
-    //check the validation before procedding
-    //update opended to true
-    //start time here for answering questions
-    // validate time while submit answer
+    
     try {
         const quize = await get_quize();
         await userRef.collection('quizes_subcollection')
         .doc(quizeSlug)
         .update({
             opened: true, 
-            date: new Date(new Date().getTime() + 60000)
+            date: new Date().getTime() + 60000,
+            correct_answer: quize.answer,
+            level: quize.level,
         }); 
         //while submit the answer check the data and satisfy the needs
         res.status(200).json({

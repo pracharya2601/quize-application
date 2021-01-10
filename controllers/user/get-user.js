@@ -13,7 +13,11 @@ const current_user = async (req, res, next) => {
     const token = req.session.user;
     const decoded = jwt.verify(token, "user_world");
     try {
-        const userData = await db.collection('users').doc(decoded.uid).get();
+        const userData = await db
+            .collection('users')
+            .doc(decoded.uid)
+            .get();
+            
         const user = {
             email: userData.data().email,
             name: userData.data().name,

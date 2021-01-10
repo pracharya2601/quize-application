@@ -11,7 +11,11 @@ const signin = async (req, res, next) => {
     const userRef = db.collection('users');
     let userDetail = [];
     try {
-        let user = await userRef.where("email", '==', email).where('verified', "==", true).get();
+        let user = await userRef
+            .where("email", '==', email)
+            .where('verified', "==", true)
+            .get();
+            
         user.forEach((doc) => {
             userDetail.push({...doc.data(), uid: doc.id});
         })

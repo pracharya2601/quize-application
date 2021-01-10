@@ -1,6 +1,8 @@
 const express = require("express");
-const {body} = require('express-validator');
+const {body, param} = require('express-validator');
 const router = express.Router();
+
+const {db} = require("../models/googlefirestore");
 // //import controller
 const { createQuize } = require("../controllers/quize/create-quize");
 const { getSingleQuize } = require("../controllers/quize/get-single-quize");
@@ -33,9 +35,14 @@ router.post('/', [
 
 router.get('/play_quize', playQuize);
 
-router.get('play_quize/:quizeSlug', getSingleQuize);
+router.get('/play_quize/:quizeSlug', getSingleQuize);
 
 //need to validate with express validator
-router.post('play_quize/:quizeSlug', submitAnswer);
+router.post('/play_quize/:quizeSlug', [
+    body("ans")
+    .not()
+    .isEmpty()
+    .withMessage("Must have the answer")
+], submitAnswer);
 
 module.exports = router;

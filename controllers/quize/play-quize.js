@@ -12,34 +12,18 @@ const playQuize = async (req, res, next) => {
     const decoded = jwt.verify(token, "user_world");
 
     const userRef = db.collection('users').doc(decoded.uid);
-    //check the subcolllectiono of quize of not opened, "opened", "==", false > 3 we gonna resut respone the user to proceed quize
-    //need to be done
-    const process_quize = async () => {
-        let doneQuizes = [];
-
-        let docRef = await userRef.collection('quizes_subcollection').where('opened', '==', true).get();
-        if(docRef.empty) {
-            return doneQuizes;
-        }
-        docRef.forEach((doc) => {
-            doneQuizes.push(doc.id);
+    const alreadyUpdatedQuize = await process_quize(userRef, false);
+    if(alreadyUpdatedQuize.length > 0) {
+        res.status(200).json({
+            quizes: alreadyUpdatedQuize,
+            message: "You can start quize now"
         })
-        return doneQuizes; //array of done quizes,
-    }
-
-    const get_quize = async () => {
-        let newQuize = [];
-        //need to work on this algorithm
-        let docRef = await db.collection('quizes').get();
-        docRef.forEach((doc) => {
-            newQuize.push(doc.id)
-        })
-        return newQuize;
+        return;
     }
 
     let notNeededQuize = [];
     try {
-        notNeededQuize = await process_quize();
+        notNeededQuize = await process_quize(userRef, true);
     }catch {
         res.status(500).json({error: "Error getting user"});
         return;
@@ -58,15 +42,13 @@ const playQuize = async (req, res, next) => {
 
     try {
         filteredQuize.forEach(async(quize) => {
-            return await userRef.collection('quizes_subcollection').doc(quize).set({
-                qid: quize,
-                opened: false,
-                submitted: false,
-                answered: false,
-                checking: true,
-                valid: true,
-                expired: false,
-                date: '',
+            return await userRef
+                .collection('quizes_subcollection')
+                .doc(quize)
+                .set({
+                    qid: quize,
+                    opened: false,
+                    valid: true,                         
             })
         })
         //send email or message to the user
@@ -79,6 +61,31 @@ const playQuize = async (req, res, next) => {
     }
 }
 
+const process_quize = async (userRef, boolvalue) => {
+    let quizes = [];
+    let docRef = await userRef
+        .collection('quizes_subcollection')
+        .where('opened', '==', boolvalue)
+        .get();
+    if(docRef.empty) {
+        return quizes;
+    }
+    docRef.forEach((doc) => {
+        quizes.push(doc.id);
+    })
+    return quizes; 
+}
 
+const get_quize = async () => {
+    let newQuize = [];
+    //need to work on this algorithm
+    let docRef = await db
+        .collection('quizes')
+        .get();
+    docRef.forEach((doc) => {
+        newQuize.push(doc.id)
+    })
+    return newQuize;
+}
 
 exports.playQuize = playQuize;

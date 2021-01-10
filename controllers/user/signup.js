@@ -32,6 +32,7 @@ const signup = async(req, res, next) => {
                 zip: '',
             },
             createdAt: new Date().toISOString(),
+            totalpoints: 0,
             //totalPoints here frorm adding the points from points subcollections
         })
         //send the email to user with code

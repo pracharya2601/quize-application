@@ -10,13 +10,6 @@ const { signup } = require("../controllers/user/signup");
 const { current_user } = require("../controllers/user/get-user");
 const { signout } = require("../controllers/user/signout");
 
-const {verifyToken} = require('../middleware/verify-cookie');
-
-
-
-
-
-
 router.get('/', current_user);
 
 router.post('/signin', [
