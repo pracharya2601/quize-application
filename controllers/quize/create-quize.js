@@ -7,8 +7,11 @@ const createQuize =async (req, res, next) => {
         answer,
         options,
         level,
+        lotId,
     } = req.body;
     const errors = validationResult(req);
+
+    const createBy = "useridofcreater"
     if(!errors.isEmpty()) {
         res.status(400).json(errors);
         return;
@@ -25,6 +28,8 @@ try{
             options: [...newOptions, {name: answer, value: answer}],
             level,
             dateCreated: new Date().toISOString(),
+            createBy,
+            lotId,
     })
     res.status(200).json({message:`Quize created with quizeId ${data.id}`})
 }catch(e) {
