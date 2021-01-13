@@ -12,80 +12,182 @@ const playQuize = async (req, res, next) => {
     const decoded = jwt.verify(token, "user_world");
 
     const userRef = db.collection('users').doc(decoded.uid);
-    const alreadyUpdatedQuize = await process_quize(userRef, false);
-    if(alreadyUpdatedQuize.length > 0) {
+
+    //check daily total value and accessPlay on user fields
+    let data;
+    try {
+        data = await get_user_val(userRef);
+    } catch {
+        res.status(400).json({error: 'error occured while playing quize'})
+        //send notification to admin play quize error occured
+        return;
+    }
+    
+    if(!data.accessPlay && data.dailyTotalPlay >= 5) {
+        res.status(400).json({error: 'Your already used your daily limit'});
+        return;
+    }
+
+    //check the quize_lot sub_collection
+    let alreadyStartedQuize = [];
+    try {
+        alreadyStartedQuize = await check_started_quize(userRef);
+    } catch {
+        res.status(400).json({error: 'Error occured while acessing updated quize'});
+        //send notification to admin
+        return;
+    }
+
+    //already processed quize lot id
+    if(alreadyStartedQuize.length > 0) {
+        //get all the remaining quize
+        let allStartedQuizes = alreadyStartedQuize[0].quizes;
+
+        //get finished updated quize
+        let startedquizeLot = [];
+
+        try {
+            startedquizeLot = await get_finished_quize(userRef);
+        } catch (e) {
+            res.status(500).json({error: "Error getting user quize started list"});
+            //send notification to admin
+            return;
+        }
+
+        //filter with the finished quize 
+        const remainingQuizeOnLot = allStartedQuizes.filter((quize) => !startedquizeLot.includes(quize));
         res.status(200).json({
-            quizes: alreadyUpdatedQuize,
+            quizes: remainingQuizeOnLot,
             message: "You can start quize now"
         })
         return;
     }
 
-    let notNeededQuize = [];
-    try {
-        notNeededQuize = await process_quize(userRef, true);
+
+    //generate random index
+    //write function for to check the lotid xist or not o lots and return it
+
+    let newQuizeLot;
+    try{
+        newQuizeLot = await get_new_lot(userRef);
     }catch {
-        res.status(500).json({error: "Error getting user"});
+        res.status(500).json({error: "Error getting user quize lot list"});
+        //send notification to admin
         return;
     }
 
-    let bulkQuizes = [];
+    if(!newQuizeLot) {
+        res.status(500).json({error: "Error getting user quize lot list"});
+        //send notification to admin
+        return;
+    }
+
+    let quizes = [];
     try {
-        bulkQuizes = await get_quize();
+        quizes = await get_quize(newQuizeLot);
     }catch {
         res.status(500).json({error: "Error getting bulk quize"});
         return;
     }
-    console.log("bulk", bulkQuizes);
-    const filteredQuize = bulkQuizes.filter((item) => !notNeededQuize.includes(item));
-    console.log('filtered',filteredQuize);
 
+    //check the length of the quizes
+    if(quizes.length === 0) {
+        res.status(500).json({error: "Quize not found please try again later"});
+        //send notification to admin
+        return;
+    }
+
+    //update to quizesubcollection
     try {
-        filteredQuize.forEach(async(quize) => {
-            return await userRef
-                .collection('quizes_subcollection')
-                .doc(quize)
-                .set({
-                    qid: quize,
-                    opened: false,
-                    valid: true,                         
-            })
+        await userRef.collection('quize_lots').doc(newQuizeLot).set({
+            completed: false,
+            date: new Date().toISOString(),
+            point: 0,
+            totalanswered: 0,
+            quizes: quizes
         })
-        //send email or message to the user
-        //need to work on this
         res.status(200).json({
-            quizes: filteredQuize,
-            message: "You can start quize now"})
-    } catch {
+            quizes: quizes,
+            message: "You can start quize now"
+        })
+    }catch {
         res.status(500).json({error: "Server error please try again later"})
     }
 }
 
-const process_quize = async (userRef, boolvalue) => {
-    let quizes = [];
-    let docRef = await userRef
-        .collection('quizes_subcollection')
-        .where('opened', '==', boolvalue)
-        .get();
-    if(docRef.empty) {
-        return quizes;
+//get user information
+const get_user_val = async (userRef) => {
+    let doc = await userRef.get();
+    if(!doc.exists) {
+        return;
+    } else {
+        return {
+            accessPlay: doc.data().accessPlay,
+            dailyTotalPlay: doc.data().dailyTotalPlay,
+        }
     }
-    docRef.forEach((doc) => {
-        quizes.push(doc.id);
-    })
-    return quizes; 
 }
 
-const get_quize = async () => {
-    let newQuize = [];
-    //need to work on this algorithm
-    let docRef = await db
-        .collection('quizes')
+const check_started_quize = async(userRef) => {
+    let startedQuize = [];
+    let docRef = await userRef
+        .collection('quize_lots')
+        .where('completed', '==', false)
         .get();
+    if(docRef.empty) {
+        return startedQuize;
+    }
     docRef.forEach((doc) => {
+        startedQuize.push({quizes: doc.data().quizes})
+    })
+    return startedQuize;
+}
+
+const get_new_lot = async (userRef) => {
+    let x = 10 //can change to any number
+    // let num = Math.floor(Math.random()* x) + 1;
+    const num = "02"
+
+    let docRef = await userRef
+        .collection('quize_lots')
+        .doc(num)
+        .get();
+    if(docRef.exists) {
+        return get_new_lot(userRef);
+    } else {
+        return num;
+    }
+}
+
+const get_quize = async (lotId) => {
+    let newQuize = [];
+    let snapShot = await db
+        .collection('quize_question')
+        .where('lotId', '==', lotId)
+        .get();
+    if(snapShot.empty) {
+        return newQuize;
+    }
+
+    snapShot.forEach((doc) => {
         newQuize.push(doc.id)
     })
     return newQuize;
 }
 
+const get_finished_quize = async (userRef) => {
+    let quizes = [];
+    let snapShot = await userRef
+        .collection('quize_progess')
+        .where('opened', '==', true) //only get the quize that is not opened
+        .where('availableOn', '==', new Date().toDateString())
+        .get();
+    if(snapShot.empty) {
+        return quizes;
+    }
+    snapShot.forEach((doc) => {
+        quizes.push(doc.id)
+    })
+    return quizes;
+}
 exports.playQuize = playQuize;

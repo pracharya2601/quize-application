@@ -33,6 +33,8 @@ const signup = async(req, res, next) => {
             },
             createdAt: new Date().toISOString(),
             totalpoints: 0,
+            accessPlay: true,
+            dailyTotalPlay: 0,
             //totalPoints here frorm adding the points from points subcollections
 
             //add they play quize today or not check 

@@ -31,6 +31,11 @@ router.post('/', [
         .not()
         .isEmpty()
         .withMessage("Must not be empty"),
+    body("lotId")
+        .not()
+        .isEmpty()
+        .withMessage("Not a creator fault")
+
 ], createQuize);
 
 router.get('/play_quize', playQuize);

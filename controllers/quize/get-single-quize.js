@@ -9,6 +9,7 @@ const getSingleQuize = async (req, res, next) => {
         })
         return;
     }
+
     const quizeSlug = req.params.quizeSlug;
     const token = req.session.user;
     const decoded = jwt.verify(token, "user_world");
@@ -18,43 +19,39 @@ const getSingleQuize = async (req, res, next) => {
         .doc(decoded.uid);
 
     const quizeRef = db
-        .collection('quizes')
+        .collection('quize_question')
         .doc(quizeSlug);
-
-    const get_quize = async () => {
-        const doc = await quizeRef.get();
-        if(!doc.exists) {
-            return;
-        } else {
-            return doc.data();
-        }
-
-    }
     
     try {
-        const quize = await get_quize();
-        await userRef.collection('quizes_subcollection')
+        const data = await get_quize(quizeRef);
+        await userRef.collection('quize_progess')
         .doc(quizeSlug)
-        .update({
+        .set({
             opened: true, 
-            date: new Date().getTime() + 60000,
-            correct_answer: quize.answer,
-            level: quize.level,
+            lotId: data.lotId,
+            date: new Date().getTime() + 60000, //1 minute
         }); 
         //while submit the answer check the data and satisfy the needs
         res.status(200).json({
             quize: {
-                question: quize.question,
-                options: quize.options,
-                level: quize.level,
+                question: data.question,
             }
         })
     }catch {
-        res.status(200).json({error: "Something went wrong Please try again later"});
+        res.status(500).json({error: "Something went wrong Please try again later"});
     }   
+}
 
-
-
+const get_quize = async (quizeRef) => {
+    const doc = await quizeRef.get();
+    if(!doc.exists) {
+        return;
+    } else {
+        return {
+            question: doc.data().question,
+            lotId: doc.data().lotId,
+        }
+    }
 }
 
 
