@@ -55,7 +55,8 @@ const submitAnswer = async (req, res, next) => {
     let data;
     try {
        data = await get_quize_info(quizeSlug);
-    } catch {
+    } catch(e) {
+        console.log(e)
         res.status(400).json({error: 'Server error please try again later'});
         //send notification to admin
         return;
@@ -112,8 +113,8 @@ const get_quize_info = async (quizeSlug) => {
     } else {
         return {
             level: doc.data().level,
-            answer: doc.date().answer,
-            lotId: doc.date().lotId,
+            answer: doc.data().answer,
+            lotId: doc.data().lotId,
         }
     }
 }

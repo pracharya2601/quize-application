@@ -18,6 +18,7 @@ const quizeRoutes = require("./routes/quize-route");
 //userRoute
 const userRoutes = require("./routes/user-route");
 
+
 const app = express();
 var corsOptions = {
   origin: ["http://localhost:3000",],
@@ -50,7 +51,6 @@ app.use(
     },
   })
 );
-
 
 app.use("/api/user", userRoutes);
 app.use("/api/quize", quizeRoutes);

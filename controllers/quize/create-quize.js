@@ -20,17 +20,27 @@ const createQuize =async (req, res, next) => {
 
     //make sure to verify the user is admin to create a quize
 try{
-    const resRef = db.collection("quizes");
+    const resRef = db.collection("quize_question");
     const data = await resRef
         .add({
             question,
-            answer,
-            options: [...newOptions, {name: answer, value: answer}],
-            level,
-            dateCreated: new Date().toISOString(),
-            createBy,
             lotId,
     })
+    await db.collection("quize_credential").add({
+        qid: data.id,
+        answer,
+        level
+    })
+    await db.collection("quize_option").add({
+        qid: data.id,
+        options:[...newOptions, {name: answer, value: answer}],
+    })
+    await db.collection('quize_info').add({
+        qid: data.id,
+        createBy,
+        dateCreated: new Date().toISOString(),
+    })
+
     res.status(200).json({message:`Quize created with quizeId ${data.id}`})
 }catch(e) {
     res.status(400).json({error: "Error occured"})
