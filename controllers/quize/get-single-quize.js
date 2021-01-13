@@ -19,23 +19,22 @@ const getSingleQuize = async (req, res, next) => {
         .doc(decoded.uid);
 
     const quizeRef = db
-        .collection('quizes')
+        .collection('quize_question')
         .doc(quizeSlug);
     
     try {
         const data = await get_quize(quizeRef);
         await userRef.collection('quize_progess')
         .doc(quizeSlug)
-        .update({
+        .set({
             opened: true, 
+            lotId: data.lotId,
             date: new Date().getTime() + 60000, //1 minute
         }); 
         //while submit the answer check the data and satisfy the needs
         res.status(200).json({
             quize: {
                 question: data.question,
-                options: data.options,
-                level: data.level,
             }
         })
     }catch {
@@ -50,8 +49,7 @@ const get_quize = async (quizeRef) => {
     } else {
         return {
             question: doc.data().question,
-            level: doc.data().level,
-            options: doc.data().options,
+            lotId: doc.data().lotId,
         }
     }
 }

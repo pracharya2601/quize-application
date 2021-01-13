@@ -1,5 +1,6 @@
 const {db} = require("../../models/googlefirestore");
 var jwt = require('jsonwebtoken');
+const { DocumentSnapshot } = require("@google-cloud/firestore");
 
 const levelData = {
     I : 1,
@@ -35,16 +36,16 @@ const submitAnswer = async (req, res, next) => {
         .collection('users')
         .doc(decoded.uid);
 
-    let time;
+    let info;
     try{
-        time = await get_time(userRef, quizeSlug);
+        info = await get_time_lot(userRef, quizeSlug);
     }catch{
         res.status(400).json({error: 'Server error please try again later'});
         //send notification to admin
         return;
     }
 
-    if(time < newTime) {
+    if(info.date < newTime) {
         //update points here
         let point = 0;
         user_quize_update(userRef, quizeSlug, "timeout", ans, point)
@@ -52,7 +53,7 @@ const submitAnswer = async (req, res, next) => {
         return;
     }
 
-    let data;
+    let data = '';
     try {
        data = await get_quize_info(quizeSlug);
     } catch(e) {
@@ -74,7 +75,7 @@ const submitAnswer = async (req, res, next) => {
     try {
         //add a point here once the answer is correct
         await update_point(userRef, point);
-        await update_on_quize_lot(userRef, data.lotId, point);
+        await update_on_quize_lot(userRef, info.lotId, point);
         await user_quize_update(userRef, quizeSlug, "correct", ans, point)
         res.status(200).json({message: 'Your answer is correct'});
 
@@ -84,7 +85,7 @@ const submitAnswer = async (req, res, next) => {
 
 }
 
-const get_time = async (userRef, quizeSlug) => {
+const get_time_lot = async (userRef, quizeSlug) => {
     const doc = await userRef
         .collection('quize_progess')
         .doc(quizeSlug)
@@ -94,6 +95,7 @@ const get_time = async (userRef, quizeSlug) => {
     } else {
         return {
             date: doc.data().date,
+            lotId: doc.data().lotId,
         }
     }
 }
@@ -104,28 +106,26 @@ const update_point = async (userRef, point) => {
 }
 
 const get_quize_info = async (quizeSlug) => {
-    const doc = await db
-        .collection('quizes')
-        .doc(quizeSlug)
+    const data = [];
+    const snapshot = await db
+        .collection('quize_credential')
+        .where('qid', '==', quizeSlug)
         .get();
-    if(!doc.exists) {
+    if(snapshot.empty) {
         return;
-    } else {
-        return {
-            level: doc.data().level,
-            answer: doc.data().answer,
-            lotId: doc.data().lotId,
-        }
-    }
+    } 
+    snapshot.forEach((doc) => {
+        data.push(doc.data());
+    })
+    return data[0];
 }
 
 const user_quize_update = async (userRef, slug,  status, answer, point) => {
     return await userRef
-        .collection('quizes_subcollection')
+        .collection('quize_progess')
         .doc(slug)
         .set({
             date: new Date().toISOString(),
-            valid: false,
             status: status,
             youranswer: answer,
             point: point

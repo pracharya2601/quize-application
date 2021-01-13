@@ -24,14 +24,14 @@ const playQuize = async (req, res, next) => {
     }
     
     if(!data.accessPlay && data.dailyTotalPlay >= 5) {
-        res.status(400).json({error: 'Your already used your daily total'});
+        res.status(400).json({error: 'Your already used your daily limit'});
         return;
     }
 
     //check the quize_lot sub_collection
-    let alreadyUpdatedQuize = [];
+    let alreadyStartedQuize = [];
     try {
-        alreadyUpdatedQuize = await process_quize_lot(userRef, false);
+        alreadyStartedQuize = await check_started_quize(userRef);
     } catch {
         res.status(400).json({error: 'Error occured while acessing updated quize'});
         //send notification to admin
@@ -39,49 +39,52 @@ const playQuize = async (req, res, next) => {
     }
 
     //already processed quize lot id
-    if(alreadyUpdatedQuize.length > 0) {
+    if(alreadyStartedQuize.length > 0) {
         //get all the remaining quize
-        //return not opened quize only
+        let allStartedQuizes = alreadyStartedQuize[0].quizes;
+
+        //get finished updated quize
         let startedquizeLot = [];
+
         try {
-            startedquizeLot = await get_updated_quize(userRef);
+            startedquizeLot = await get_finished_quize(userRef);
         } catch (e) {
             res.status(500).json({error: "Error getting user quize started list"});
             //send notification to admin
             return;
         }
 
-        if(startedquizeLot.length === 0) {
-            //update status of this quize lot is competed to false working on it
-            res.status(500).json({error: "Quize not found please try again later"});
-            //send notification to admin
-            return;
-        }
-
+        //filter with the finished quize 
+        const remainingQuizeOnLot = allStartedQuizes.filter((quize) => !startedquizeLot.includes(quize));
         res.status(200).json({
-            quizes: startedquizeLot,
+            quizes: remainingQuizeOnLot,
             message: "You can start quize now"
         })
         return;
     }
 
-    let avoidQuize = [];
+
+    //generate random index
+    //write function for to check the lotid xist or not o lots and return it
+
+    let newQuizeLot;
     try{
-        avoidQuize = await process_quize_lot(userRef, true);
+        newQuizeLot = await get_new_lot(userRef);
     }catch {
         res.status(500).json({error: "Error getting user quize lot list"});
         //send notification to admin
         return;
     }
-    
-    //generate random id not available on avoid Quize 
-    //but should match id from quize collection where lotId is, 
 
-    // const randomQuizeLot = generate_random_num(avoidQuize);
-    const randomQuizeLot = `01`;
+    if(!newQuizeLot) {
+        res.status(500).json({error: "Error getting user quize lot list"});
+        //send notification to admin
+        return;
+    }
+
     let quizes = [];
     try {
-        quizes = await get_quize(randomQuizeLot);
+        quizes = await get_quize(newQuizeLot);
     }catch {
         res.status(500).json({error: "Error getting bulk quize"});
         return;
@@ -96,20 +99,12 @@ const playQuize = async (req, res, next) => {
 
     //update to quizesubcollection
     try {
-        await userRef.collection('quize_lots').doc(randomQuizeLot).set({
+        await userRef.collection('quize_lots').doc(newQuizeLot).set({
             completed: false,
             date: new Date().toISOString(),
             point: 0,
-            totalanswered: 0
-        })
-        quizes.forEach(async(item) => {
-            return await userRef
-                .collection('quize_progess')
-                .doc(item)
-                .set({
-                    valid: true,
-                    opened: false,
-                })
+            totalanswered: 0,
+            quizes: quizes
         })
         res.status(200).json({
             quizes: quizes,
@@ -133,36 +128,41 @@ const get_user_val = async (userRef) => {
     }
 }
 
-const process_quize_lot = async (userRef, boolvalue) => {
-    let lotIds = [];
+const check_started_quize = async(userRef) => {
+    let startedQuize = [];
     let docRef = await userRef
         .collection('quize_lots')
-        .where('completed', '==', boolvalue)
+        .where('completed', '==', false)
         .get();
     if(docRef.empty) {
-        return lotIds;
+        return startedQuize;
     }
     docRef.forEach((doc) => {
-        lotIds.push(doc.id);
+        startedQuize.push({quizes: doc.data().quizes})
     })
-    return lotIds; 
+    return startedQuize;
 }
 
-const generate_random_num = (arr) => {
+const get_new_lot = async (userRef) => {
     let x = 10 //can change to any number
-    let num = Math.floor(Math.random()* x) + 1;
-    if(arr.includes(`${num}`)) {
-        return generate_random_num(arr);
+    // let num = Math.floor(Math.random()* x) + 1;
+    const num = "02"
+
+    let docRef = await userRef
+        .collection('quize_lots')
+        .doc(num)
+        .get();
+    if(docRef.exists) {
+        return get_new_lot(userRef);
     } else {
         return num;
     }
 }
 
-
 const get_quize = async (lotId) => {
     let newQuize = [];
     let snapShot = await db
-        .collection('quizes')
+        .collection('quize_question')
         .where('lotId', '==', lotId)
         .get();
     if(snapShot.empty) {
@@ -175,11 +175,12 @@ const get_quize = async (lotId) => {
     return newQuize;
 }
 
-const get_updated_quize = async (userRef) => {
+const get_finished_quize = async (userRef) => {
     let quizes = [];
     let snapShot = await userRef
         .collection('quize_progess')
-        .where('opened', '==', false) //only get the quize that is not opened
+        .where('opened', '==', true) //only get the quize that is not opened
+        .where('availableOn', '==', new Date().toDateString())
         .get();
     if(snapShot.empty) {
         return quizes;
