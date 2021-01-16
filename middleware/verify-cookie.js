@@ -8,7 +8,7 @@ const verifyToken = async (req, res, next) => {
         return;
     }
     const token = req.session.user;
-    const decoded = jwt.verify(token, "user_world");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     try{
         const userData = await db.collection('users').doc(decoded.uid).get();

@@ -1,7 +1,7 @@
 const {validationResult} = require("express-validator");
 const {db} = require("../../models/googlefirestore");
 const {hashPass} = require("../../models/hash-password");
-// const {sendSignUpMessage} = require("../../utils/mailing-service");
+const {sendSignUpMessage} = require("../../utils/mailing-service");
 const signup = async(req, res, next) => {
     const {
         email,
@@ -17,8 +17,12 @@ const signup = async(req, res, next) => {
         res.status(400).json(errors);
         return;
     }
+
+
+
+    let resUser;
     try{
-        let resUser = await db.collection('users').add({
+        resUser = await db.collection('users').add({
             email,
             password: hash,
             name,
@@ -35,26 +39,36 @@ const signup = async(req, res, next) => {
             totalpoints: 0,
             accessPlay: true,
             dailyTotalPlay: 0,
-            //totalPoints here frorm adding the points from points subcollections
+            //totalPoints here frorm adding the poinsts from points subcollections
 
             //add they play quize today or not check 
         })
-        //send the email to user with code
-        // await sendSignUpMessage( "pracharya2601@gmail.com", "123123");
-        //verify with phonw number
-    
-        //send mail
-    
-        res.status(200).json({
-            message: `user has been created ${resUser.id}`,
+       // send the email to user with code
         
-        });
+
+
     } catch (e) {
+        console.log(e)
         res.status(403).json({
             error: `Something went wrong`,
         
         });
+        return;
     }
+
+    let mailstat = await sendSignUpMessage(email, name, code);
+    if(!mailstat) {
+        res.status(403).json({
+           error: `Something went wrong`,
+        });
+        return;
+    }
+    res.status(200).json({
+        message: `user has been created ${email}`,
+    
+    });
+
+
 }
 
 exports.signup = signup;

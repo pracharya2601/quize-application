@@ -72,6 +72,7 @@ const submitAnswer = async (req, res, next) => {
     }
 
     const point = levelData[data.level];
+    //check the number of submited answer and send the email abif it is 13
     try {
         //add a point here once the answer is correct
         await update_point(userRef, point);
@@ -144,7 +145,7 @@ const update_on_quize_lot = async (userRef, lotId, point) => {
     return await ref.update({
         point: doc.data().point + point,
         totalanswerd: new_number,
-        completed: new_number === 18 ? true : false,
+        completed: new_number === 13 ? true : false,
     })
 
     

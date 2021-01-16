@@ -21,7 +21,7 @@ const userRoutes = require("./routes/user-route");
 
 const app = express();
 var corsOptions = {
-  origin: ["http://localhost:3000",],
+  origin: ["http://localhost:3000"],
   credentials: true
 };
 
@@ -39,7 +39,7 @@ app.use(
       kind: 'express-sessions',
     }),
     
-    secret: 'my-secret',
+    secret: process.env.SESSION_SECRET,
     resave: true,
     saveUninitialized: true,
     proxy: true,
