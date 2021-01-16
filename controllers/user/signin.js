@@ -39,7 +39,7 @@ const signin = async (req, res, next) => {
     const token = jwt.sign({
         uid: userDetail[0].uid,
         email: email,
-    }, "user_world")
+    }, process.env.JWT_SECRET)
 
     req.session.user = token;
     res.status(200).json({

@@ -11,7 +11,8 @@ const current_user = async (req, res, next) => {
     }   
     console.log(req.sessionID);
     const token = req.session.user;
-    const decoded = jwt.verify(token, "user_world");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
     try {
         const userData = await db
             .collection('users')
@@ -29,7 +30,7 @@ const current_user = async (req, res, next) => {
         })
     
     } catch (e) {
-
+        console.log(e)
     }
 
 }

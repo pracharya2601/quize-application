@@ -1,5 +1,7 @@
 const {db} = require("../../models/googlefirestore");
 var jwt = require('jsonwebtoken');
+const { sendQuizeStartMesssage } = require("../../utils/mailing-service");
+
 const playQuize = async (req, res, next) => {
     if(!req.session.user) {
         req.status(200).json({
@@ -110,6 +112,7 @@ const playQuize = async (req, res, next) => {
             quizes: quizes,
             message: "You can start quize now"
         })
+        return sendQuizeStartMesssage(data.email);
     }catch {
         res.status(500).json({error: "Server error please try again later"})
     }
@@ -124,6 +127,7 @@ const get_user_val = async (userRef) => {
         return {
             accessPlay: doc.data().accessPlay,
             dailyTotalPlay: doc.data().dailyTotalPlay,
+            email: doc.data().email,
         }
     }
 }
