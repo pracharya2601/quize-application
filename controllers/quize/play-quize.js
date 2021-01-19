@@ -1,6 +1,7 @@
 const {db} = require("../../models/googlefirestore");
 var jwt = require('jsonwebtoken');
 const { sendQuizeStartMesssage } = require("../../utils/mailing-service");
+const {getTodayDate} = require('../../utils/getTodayDate');
 
 const playQuize = async (req, res, next) => {
     if(!req.session.user) {
@@ -24,8 +25,7 @@ const playQuize = async (req, res, next) => {
         //send notification to admin play quize error occured
         return;
     }
-    
-    if(!data.accessPlay && data.dailyTotalPlay >= 5) {
+    if(data.dailyTotalPlay >= 5) {
         res.status(400).json({error: 'Your already used your daily limit'});
         return;
     }
@@ -55,9 +55,11 @@ const playQuize = async (req, res, next) => {
             //send notification to admin
             return;
         }
+        console.log(startedquizeLot)
 
         //filter with the finished quize 
         const remainingQuizeOnLot = allStartedQuizes.filter((quize) => !startedquizeLot.includes(quize));
+        console.log(remainingQuizeOnLot)
         res.status(200).json({
             quizes: remainingQuizeOnLot,
             message: "You can start quize now"
@@ -100,13 +102,20 @@ const playQuize = async (req, res, next) => {
     }
 
     //update to quizesubcollection
+    console.log(quizes);
     try {
         await userRef.collection('quize_lots').doc(newQuizeLot).set({
             completed: false,
             date: new Date().toISOString(),
             point: 0,
             totalanswered: 0,
+            totalopened: 0,
             quizes: quizes
+        })
+        await userRef.update({
+            dailyTotalPlay: data.dailyTotalPlay + 1,
+            playedAt: new Date(Date.now()) //24 hours added
+
         })
         res.status(200).json({
             quizes: quizes,
@@ -125,7 +134,6 @@ const get_user_val = async (userRef) => {
         return;
     } else {
         return {
-            accessPlay: doc.data().accessPlay,
             dailyTotalPlay: doc.data().dailyTotalPlay,
             email: doc.data().email,
         }
@@ -184,7 +192,7 @@ const get_finished_quize = async (userRef) => {
     let snapShot = await userRef
         .collection('quize_progess')
         .where('opened', '==', true) //only get the quize that is not opened
-        .where('availableOn', '==', new Date().toDateString())
+        .where('availableOn', '==', getTodayDate())
         .get();
     if(snapShot.empty) {
         return quizes;

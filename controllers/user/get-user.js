@@ -9,29 +9,37 @@ const current_user = async (req, res, next) => {
         })
         return;
     }   
-    console.log(req.sessionID);
     const token = req.session.user;
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
+    const userRef = db.collection('users').doc(decoded.uid);
+    const checktime = new Date(Date.now());
+    let data;
     try {
-        const userData = await db
-            .collection('users')
-            .doc(decoded.uid)
-            .get();
-            
-        const user = {
-            email: userData.data().email,
-            name: userData.data().name,
-            address: userData.data().address,
-        }
-        res.status(200).json({
-            signIn: true,
-            user: user,
-        })
-    
-    } catch (e) {
-        console.log(e)
+        data = await userRef.get();   
+    } catch {
+        res.status(500).json({error: "Error getting quize"});
+        return;
+        //send message to admin
     }
+    const user = {
+        email: data.data().email,
+        name: data.data().name,
+        address: data.data().address,
+        playAccess: data.data().dailyTotalPlay >= 5 ? false : true,
+    }
+    console.log(data.data().playedAt.toDate());
+    console.log(checktime);
+    console.log(checktime - data.data().playedAt.toDate() > 86400000);
+
+    if(checktime - data.data().playedAt.toDate() > 86400000) {
+        await userRef.update({
+            dailyTotalPlay: 0
+        })
+    }
+    res.status(200).json({
+        signIn: true,
+        user: user,
+    })
 
 }
 
