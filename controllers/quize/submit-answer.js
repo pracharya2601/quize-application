@@ -49,7 +49,7 @@ const submitAnswer = async (req, res, next) => {
         //update points here
         let point = 0;
         user_quize_update(userRef, quizeSlug, "timeout", ans, point)
-        res.status(200).json({message: 'Timeout on submit question'});
+        res.status(200).json({message: 'Timeout on submit'});
         return;
     }
 
@@ -78,7 +78,10 @@ const submitAnswer = async (req, res, next) => {
         await update_point(userRef, point);
         await update_on_quize_lot(userRef, info.lotId, point);
         await user_quize_update(userRef, quizeSlug, "correct", ans, point)
-        res.status(200).json({message: 'Your answer is correct'});
+        res.status(200).json({
+            message: 'Your answer is correct',
+            point: point
+        });
 
     } catch {
         res.status(400).json({error: 'Something went wrong please try again later'})
@@ -140,12 +143,11 @@ const update_on_quize_lot = async (userRef, lotId, point) => {
     
     const doc = await ref.get();
 
-    const new_number = doc.data().totalanswerd + 1
+    const new_number = doc.data().totalanswered + 1
 
     return await ref.update({
         point: doc.data().point + point,
-        totalanswerd: new_number,
-        completed: new_number === 13 ? true : false,
+        totalanswered: new_number,
     })
 
     
