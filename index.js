@@ -17,6 +17,8 @@ const HttpError = require('./models/http-error');
 const quizeRoutes = require("./routes/quize-route");
 //userRoute
 const userRoutes = require("./routes/user-route");
+//point routes
+const pointRoutes = require("./routes/point-route");
 
 
 const app = express();
@@ -54,6 +56,7 @@ app.use(
 
 app.use("/api/user", userRoutes);
 app.use("/api/quize", quizeRoutes);
+app.use("/api/points", pointRoutes);
 
 
 app.use((req, res, next) => {
