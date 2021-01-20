@@ -1,6 +1,5 @@
 const {db} = require("../../models/googlefirestore");
 var jwt = require('jsonwebtoken');
-const { DocumentSnapshot } = require("@google-cloud/firestore");
 
 const levelData = {
     I : 1,
@@ -103,6 +102,8 @@ const get_time_lot = async (userRef, quizeSlug) => {
         }
     }
 }
+
+//change the collection to update points
 const update_point = async (userRef, point) => {
     let doc = await userRef.get();
     return await userRef
