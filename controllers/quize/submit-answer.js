@@ -74,7 +74,7 @@ const submitAnswer = async (req, res, next) => {
     //check the number of submited answer and send the email abif it is 13
     try {
         //add a point here once the answer is correct
-        await update_point(userRef, point);
+        await update_final_point(userRef, point);
         await update_on_quize_lot(userRef, info.lotId, point);
         await user_quize_update(userRef, quizeSlug, "correct", ans, point)
         res.status(200).json({
@@ -104,11 +104,32 @@ const get_time_lot = async (userRef, quizeSlug) => {
 }
 
 //change the collection to update points
-const update_point = async (userRef, point) => {
-    let doc = await userRef.get();
-    return await userRef
-        .update({totalpoints: doc.data().totalpoints + point});
+const update_final_point = async (userRef, point) => {
+    let docRef = userRef
+        .collection('user_points');
+    let doc = await docRef
+        .doc('final_points')
+        .get();
+
+    if(!doc.exists) {
+        return await docRef
+            .doc('final_points')
+            .set({
+               totalpoints: point,
+               totalpointearn: point,
+               totalpointpurchase: 0,
+               totalpointused: 0, 
+            })
+    } else {
+        return await docRef
+            .doc('final_points')
+            .update({
+                totalpoints: doc.data().totalpoints + point,
+                totalpointearn: doc.data().totalpointearn + point,
+            })
+    }
 }
+
 
 const get_quize_info = async (quizeSlug) => {
     const data = [];
