@@ -22,6 +22,7 @@ const signin = async (req, res, next) => {
 
     }catch (e) {
         res.status(400).json({error: 'User not Found'});
+        return;
     }
     if(userDetail.length === 0) {
         res.status(400).json({error: 'User not Found'});
