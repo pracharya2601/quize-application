@@ -12,34 +12,41 @@ const getPurchasedPoints = async (req, res, next) => {
     const token = req.session.user;
     const decoded = jwt.verify(token, "user_world");
     const userRef = db.collection('users').doc(decoded.uid);
-
-    let purchasedPoints;
+    const limit = 7;
+    let after = req.query.after;
 
     try {
-        purchasedPoints = await get_purchased_point(userRef);
-    } catch(e) {
+        var pointsRef = userRef.collection('purchased_point')
+            .orderBy('date', 'desc');
+        if(after) {
+            pointsRef = pointsRef.startAfter(after).limit(limit);
+        }
+        else {
+            pointsRef = pointsRef.limit(limit);
+        }
+
+        const snapshot = await pointsRef.get();
+
+        let points = [];
+
+        snapshot.forEach(doc => {
+            points.push({
+                id: doc.id,
+                date: doc.data().date,
+                point: doc.data().point,
+                status: doc.data().status,
+            });
+        })
+
+        res.status(200).json({
+            nextpage: points.length == limit ? points[points.length -1].date : null,
+            pointHistory: points,
+        })
+
+    }catch {
         console.log(e);
         res.status(500).json({error: "Error getting purchased points lists"});
-        return;
     }
-    res.status(200).json(purchasedPoints)
 }
-
-const get_purchased_point = async(userRef) => {
-    let data = [];
-    let snapshot = await userRef
-        .collection('purchased_point')
-        .get();
-    if(snapshot.empty) {
-        console.log("no data");
-        return data;
-    }
-
-    snapshot.forEach(doc => {
-        data.push({...doc.data(), id: doc.id});
-    })
-    return data;
-}
-
 
 exports.getPurchasedPoints = getPurchasedPoints;

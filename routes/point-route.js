@@ -12,6 +12,7 @@ router.get('/available', getPoints);
 router.get('/earned', getQuizPoints);
 router.post('/purchased', purchasePoint);
 router.get('/purchased', getPurchasedPoints);
+router.post('/purchase', purchasePoint);
 
 
 module.exports = router;

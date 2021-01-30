@@ -83,6 +83,7 @@ const purchasePoint = async (req, res, next) => {
         .collection('purchased_point')
         .doc(req.body.id)
         .set(verifiedData);
+        await update_final_point(userRef, verifiedData.point);
         //send email to user
         //confirmation code
         res.status(200).json({
@@ -102,6 +103,32 @@ const purchasePoint = async (req, res, next) => {
     }
 }
 //update on final_point sub collection
+//change the collection to update points
+const update_final_point = async (userRef, point) => {
+    let docRef = userRef
+        .collection('user_points');
+    let doc = await docRef
+        .doc('final_points')
+        .get();
+
+    if(!doc.exists) {
+        return await docRef
+            .doc('final_points')
+            .set({
+               totalpoints: point,
+               totalpointearn: 0,
+               totalpointpurchase: point,
+               totalpointused: 0, 
+            })
+    } else {
+        return await docRef
+            .doc('final_points')
+            .update({
+                totalpoints: doc.data().totalpoints + point,
+                totalpointpurchase: doc.data().totalpointpurchase + point,
+            })
+    }
+}
 
 //purchased_point sub-collection for purchasing points
 //add purchased data to the sub-collection
