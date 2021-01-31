@@ -14,6 +14,7 @@ const getPurchasedPoints = async (req, res, next) => {
     const userRef = db.collection('users').doc(decoded.uid);
     const limit = 7;
     let after = req.query.after;
+    console.log(after)
 
     try {
         var pointsRef = userRef.collection('purchased_point')

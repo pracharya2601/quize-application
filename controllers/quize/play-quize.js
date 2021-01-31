@@ -17,6 +17,7 @@ const playQuize = async (req, res, next) => {
     const userRef = db.collection('users').doc(decoded.uid);
 
     //check daily total value and accessPlay on user fields
+    console.log(decoded.uid)
     let data;
     try {
         data = await get_user_val(userRef);
@@ -29,7 +30,6 @@ const playQuize = async (req, res, next) => {
         res.status(400).json({error: 'Your already used your daily limit'});
         return;
     }
-
     //check the quize_lot sub_collection
     let alreadyStartedQuize = [];
     try {
@@ -39,7 +39,7 @@ const playQuize = async (req, res, next) => {
         //send notification to admin
         return;
     }
-
+    console.log(alreadyStartedQuize)
     //already processed quize lot id
     if(alreadyStartedQuize.length > 0) {
         //get all the remaining quize
