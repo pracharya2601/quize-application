@@ -19,6 +19,8 @@ const quizeRoutes = require("./routes/quize-route");
 const userRoutes = require("./routes/user-route");
 //point routes
 const pointRoutes = require("./routes/point-route");
+//cart routes
+const cartRoutes = require('./routes/cart-route');
 
 
 const app = express();
@@ -57,6 +59,7 @@ app.use(
 app.use("/api/user", userRoutes);
 app.use("/api/quize", quizeRoutes);
 app.use("/api/points", pointRoutes);
+app.use('/api/cart', cartRoutes);
 
 
 app.use((req, res, next) => {

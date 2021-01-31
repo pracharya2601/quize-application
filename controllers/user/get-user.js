@@ -27,9 +27,6 @@ const current_user = async (req, res, next) => {
         address: data.data().address,
         playAccess: data.data().dailyTotalPlay >= 5 ? false : true,
     }
-    console.log(data.data().playedAt.toDate());
-    console.log(checktime);
-    console.log(checktime - data.data().playedAt.toDate() > 86400000);
 
     if(checktime - data.data().playedAt.toDate() > 86400000) {
         await userRef.update({
