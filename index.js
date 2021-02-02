@@ -42,9 +42,8 @@ app.use(
       dataset: db,
       kind: 'express-sessions',
     }),
-    
     secret: process.env.SESSION_SECRET,
-    resave: true,
+    resave: false,
     saveUninitialized: true,
     proxy: true,
     cookie: {
