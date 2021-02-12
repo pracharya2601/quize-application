@@ -7,24 +7,60 @@ const transporter = nodemailer.createTransport(sendgridTransport({
     }
 }))
 
-const sendSignUpMessage = async (email, name, code) => {
-    let mailStat;
-    try {
-        await transporter.sendMail({
-            to: email,
-            from: process.env.SENDGRID_EMAIL_FROM,
-            subject: 'Verify Your Account',
-            text: `Welcome to the lotto server, ${name}. Yout verification code is ${code} Please use this code to verify nyout account.`,
-        });
-        mailStat = true;
-    } catch (e) {
-        console.log(e);
-        mailStat = false;
-    }
-    return mailStat;
+module.exports.sendSignUpMessage = async (email, name, code, id) => {
+    return await transporter.sendMail({
+        to: email,
+        from: process.env.SENDGRID_EMAIL_FROM,
+        subject: 'Verify Your Account',
+        html: `<a href="http://localhost:3000/auth/user/verify/${email}/${code}">Click here to verify the email</a> `
+    });
 };
 
-const sendQuizeStartMesssage = async (email) => {
+module.exports.sendVerifiedMessage = async (email) => {
+    return await transporter.sendMail({
+        to: email,
+        from: process.env.SENDGRID_EMAIL_FROM,
+        subject: 'Your account is verrified',
+        text: `Your Account is Verified. Please Signin to your account to play quize.`,
+    });
+}
+
+module.exports.sendTemporaryPass = async (email, pass) => {
+    return await transporter.sendMail({
+        to: email,
+        from: process.env.SENDGRID_EMAIL_FROM,
+        subject: 'Request forgot password code',
+        html: `
+            <div>
+                <h3>You requested for password reser</h3>
+                <p>Your temporary password is <code>${pass}</code></p>
+                <p>This is random generated password. Please dont forgot to change your password once you login.</p>
+                <br />
+                <br />
+                <p>If you did not request for password reset please contact us and change your password.</p>
+            </div>
+        `,
+    });
+}
+
+module.exports.passChangedEmail = async (email) => {
+    return await transporter.sendMail({
+        to: email,
+        from: process.env.SENDGRID_EMAIL_FROM,
+        subject: 'Password Changed',
+        html: `
+            <div>
+                <h3>Your password has been changed</h3>
+                <br />
+                <br />
+                <p>If you did not request for password reset please contact us and change your password.</p>
+            </div>
+        `,
+    });
+}
+
+
+module.exports.sendQuizeStartMesssage = async (email) => {
     return await transporter.sendMail({
         to: email,
         from: process.env.SENDGRID_EMAIL_FROM,
@@ -32,6 +68,3 @@ const sendQuizeStartMesssage = async (email) => {
         text: `You started the quize. Please follow the protocles to submit the answer`,
     });
 }
-
-exports.sendSignUpMessage = sendSignUpMessage;
-exports.sendQuizeStartMesssage = sendQuizeStartMesssage;

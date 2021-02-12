@@ -1,5 +1,3 @@
-
-
 const signout = async (req, res, next) => {
     req.session.destroy(function (err) {
         if (err) {
