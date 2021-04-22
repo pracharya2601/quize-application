@@ -5,6 +5,7 @@ const {hashPass, hashCompare} = require("../../models/hash-password");
 const {passChangedEmail} = require("../../utils/mailing-service");
 const collectionupdate = require('../../common/collectionupdate');
 const collection = require('../../common/collection');
+const subcollectionadd = require('../../common/subcollectionadd');
 
 const changePassword = wrap(async (req, res, next) => {
     if(!req.session.user) {
@@ -38,7 +39,7 @@ const changePassword = wrap(async (req, res, next) => {
     const data = await collection('users', userId);
     const passMatch = await hashCompare(lastpass, data.password);
     if(!passMatch) {
-        res.status(404).json({error: 'Old password incorrect'});
+        res.status(404).json({error: 'Old password is not correct'});
         return;
     }
 
@@ -51,10 +52,10 @@ const changePassword = wrap(async (req, res, next) => {
         lastpass: true,
     })
     //send email to user about password change
-    await passChangedEmail(email);
+    await passChangedEmail(data.email);
 
     res.status(200).json({
-        message: `We sent you a temporary passsword on your email`,
+        message: `Your password has been channge`,
     });
 })
 

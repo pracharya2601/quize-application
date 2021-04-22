@@ -65,7 +65,7 @@ router.post('/changepassword',[
     body('lastpass')
         .trim()
         .isLength({min: 6})
-        .withMessage('Your password is incorrect'),
+        .withMessage('Your Password is'),
     body('newpass')
         .trim()
         .isLength({min: 6})

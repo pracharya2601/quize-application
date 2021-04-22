@@ -14,7 +14,7 @@ const getUserDetail = wrap(async (req, res, next) => {
     const decoded = decodedToken(token);
     const userId = decoded.uid;
 
-    const data = subcollection('users', userId, 'user_detail', 'detail');
+    const data = await subcollection('users', userId, 'user_data', 'detail');
     res.status(200).json({data: data})
 })
 
