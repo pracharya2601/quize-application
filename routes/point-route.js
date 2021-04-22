@@ -1,18 +1,15 @@
-const express = require("express");
+const express = require('express');
+const { earnedPoint } = require('../controllers/point/earned-point');
+const { point } = require('../controllers/point/point');
+const { pointDetail } = require('../controllers/point/point-detail');
+const { purchasePoint } = require('../controllers/point/purchase-point');
+const { purchasedPoint } = require('../controllers/point/purchased-point');
+const { usedPoint } = require('../controllers/point/used-point');
 const router = express.Router();
 
-const {getPoints} = require('../controllers/point/get-points');
-const { getPurchasedPoints } = require("../controllers/point/get-purchase-point");
-const {getQuizPoints} = require('../controllers/point/get-quiz-points');
-const { points } = require("../controllers/point/points");
-const { purchasePoint } = require("../controllers/point/purchase-point");
-
-router.get('/', points);
-router.get('/available', getPoints);
-router.get('/earned', getQuizPoints);
-router.post('/purchased', purchasePoint);
-router.get('/purchased', getPurchasedPoints);
-router.post('/purchase', purchasePoint);
-
-
-module.exports = router;
+router.get('/', point);
+router.post('/', purchasePoint);
+router.get('/used', usedPoint);
+router.get('/used/:usedSlug', pointDetail);
+router.get('/earned', earnedPoint);
+router.get('/purchased', purchasedPoint);

@@ -1,40 +1,28 @@
 {
-  "name": "loto_server",
+  "name": "quize-server",
   "version": "1.0.0",
-  "description": "",
+  "description": "Express server for quize application",
   "main": "index.js",
   "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon index.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Prakash Acharya",
+  "license": "MIT",
   "dependencies": {
-    "@google-cloud/connect-firestore": "^2.0.1",
-    "@google-cloud/firestore": "^4.8.1",
-    "@sendgrid/mail": "^7.4.1",
-    "axios": "^0.21.1",
-    "bcryptjs": "^2.4.3",
+    "@sendgrid/mail": "^7.4.2",
+    "bcrypt": "^5.0.1",
     "body-parser": "^1.19.0",
-    "cookie-parser": "^1.4.5",
-    "cookie-session": "^1.4.0",
     "cors": "^2.8.5",
-    "csurf": "^1.11.0",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
-    "express-rate-limit": "^5.2.3",
     "express-session": "^1.17.1",
-    "express-validator": "^6.9.2",
-    "firebase": "^8.2.1",
-    "helmet": "^4.3.1",
-    "hpp": "^0.2.3",
+    "express-validator": "^6.10.0",
+    "firebase-admin": "^9.5.0",
+    "firestore-store": "^2.0.2",
     "jsonwebtoken": "^8.5.1",
-    "mailgun-js": "^0.22.0",
-    "nodemailer": "^6.4.17",
-    "nodemailer-sendgrid": "^1.0.3",
-    "nodemailer-sendgrid-transport": "^0.2.0"
-  },
-  "devDependencies": {
-    "nodemon": "^2.0.6"
+    "nodemailer": "^6.5.0",
+    "nodemailer-sendgrid-transport": "^0.2.0",
+    "path": "^0.12.7"
   }
 }

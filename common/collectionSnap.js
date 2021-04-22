@@ -1,4 +1,4 @@
-const { db } = require("../models/googlefirestore")
+const { db } = require("../model/fb");
 
 module.exports.singleQuery = async (dbcollection, field, fieldVal, singleData) => {
     const reference = db
@@ -17,7 +17,7 @@ module.exports.singleQuery = async (dbcollection, field, fieldVal, singleData) =
     } else {
         let data = [];
         query.forEach(element => {
-            data.push({...element.data(), id: element.data().id,})
+            data.push({...element.data(), id: element.id,})
         });
         return data;
     }
@@ -41,7 +41,7 @@ module.exports.multipleQuery = async (dbcollection, field, fieldVal, fieldtwo, f
     } else {
         let data = [];
         docs.array.forEach(element => {
-            data.push({...element.data(), id: element.data().id,})
+            data.push({...element.data(), id: element.id,})
         });
         return data;
     }

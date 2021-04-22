@@ -3,13 +3,9 @@ const {body} = require('express-validator');
 const router = express.Router();
 // //import controller
 const { createQuize } = require("../controllers/quize/create-quize");
-const { getSingleQuize } = require("../controllers/quize/get-single-quize");
 const { playQuize } = require("../controllers/quize/play-quize");
+const { quizeQuestion } = require("../controllers/quize/quize-question");
 const { submitAnswer } = require("../controllers/quize/submit-answer");
-
-
-
-
 
 // router.get('/', getQuize);
 router.post('/', [
@@ -36,16 +32,13 @@ router.post('/', [
 
 ], createQuize);
 
-router.get('/play_quize', playQuize);
-
-router.get('/play_quize/:quizeSlug', getSingleQuize);
-
-//need to validate with express validator
-router.post('/play_quize/:quizeSlug', [
+router.get('/play', playQuize);
+router.get('/play/:quizeSlug', quizeQuestion);
+router.post('/play/:quizeSlug', [
     body("ans")
     .not()
     .isEmpty()
     .withMessage("Must have the answer")
-], submitAnswer);
+], submitAnswer)
 
 module.exports = router;

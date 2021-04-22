@@ -19,15 +19,26 @@ const verifyUser = wrap(async (req, res, next) => {
     }
     const data =  await multipleQuery('users', 'email', verifyEmail, 'verified', false, true);
     if(!data) {
-        res.status(400).json({error: "Not authorized"})
+        res.status(400).json({
+            alert: {
+                text: 'Server error',
+                type: 'warning'
+            } 
+        })
         return;
     }
     if(data.code != parseInt(verificationcode) ) {
-        res.status(400).json({error: "Code is not valid"})
+        res.status(400).json({
+            alert: {
+                text: 'Verification error',
+                type: 'danger'
+            } 
+        })
         return;
     }
     const verify = {
         verified: true,
+        dailyTotalPlay: 0,
     }
     const userDetailData = {
         address: {
@@ -47,7 +58,10 @@ const verifyUser = wrap(async (req, res, next) => {
     await sendVerifiedMessage(verifyEmail);
 
     res.status(200).json({
-        message: 'Verified Successful! Please Login to the account to continue..'
+        alert: {
+            text: 'Email Verified',
+            type: 'success'
+        } 
     })
 })
 

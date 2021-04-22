@@ -1,7 +1,6 @@
-const {db} = require("../../models/googlefirestore");
-var jwt = require('jsonwebtoken');
+const wrap = require("../../middleware/wrap");
 
-const deleteCart = async (req, res, next) => {
+const deleteCart = wrap(async(req, res, next) => {
     if(!req.session.user) {
         res.status(200).json({
             signIn: false,
@@ -9,26 +8,29 @@ const deleteCart = async (req, res, next) => {
         })
         return;
     }
-    const token = req.session.user;
-    const decoded = jwt.verify(token, "user_world");
-    const userRef = db.collection('users').doc(decoded.uid);
     const cartSlug = req.params.cartSlug;
-    const newCart = req.session.cart - 1 ;
-    try {
-        await userRef
-            .collection('cart')
-            .doc(cartSlug)
-            .delete();
-        req.session.cart = newCart
-        res.status(200).json({
-            itemCount: req.session.cart,
-            message: 'Item remove from cart',
+    if(!req.session.carts) {
+        req.session.carts = [];
+        res.status(400).json({
+            alert: {
+                text: "Something went wrong",
+                type: 'danger',
+            }
         })
-        
-    }catch(e) {
-        console.log(e);
-        res.status(500).json({error: "Erroroccured please try again later"});
     }
-}
+    let carts = req.session.carts;
+    let filteredCarts = carts.filter(item => item.id !== cartSlug);
+    req.session.carts = filteredCarts;
+    const pointneeded = filteredCarts.reduce((prevPoint, item) => prevPoint + (item.point), 0)
+    res.status(200).json({
+        total: pointneeded,
+        count: filteredCarts.length,
+        data: cartSlug,
+        alert: {
+            text: "Item removed from cart",
+            type: 'success',
+        }
+    })
+})
 
-exports.deleteCart = deleteCart
+exports.deleteCart = deleteCart;

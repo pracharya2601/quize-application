@@ -1,7 +1,10 @@
-const {db} = require("../../models/googlefirestore");
-var jwt = require('jsonwebtoken');
+const wrap = require("../../middleware/wrap");
+const decodedToken = require("../../utils/decodedToken");
+const ticketList = require('../../model/ticket.json');
+const { drawDate } = require("../../utils/drawDate");
 
-const addCart = async (req, res, next) => {
+
+const addCart = wrap(async(req, res, next) => {
     if(!req.session.user) {
         res.status(200).json({
             signIn: false,
@@ -10,74 +13,39 @@ const addCart = async (req, res, next) => {
         return;
     }
     const token = req.session.user;
-    const decoded = jwt.verify(token, "user_world");
-    const userRef = db.collection('users').doc(decoded.uid);
-    const itemType = req.query.itemType;
-    const item = req.query.item;
-    const type = req.query.type; //type ticket type adn inventory type
+    const decoded = decodedToken(token);
+    const userId = decoded.uid;
 
-    const newCart = req.session.cart ? req.session.cart + 1 : 1;
-    let data;
-    try {
-        data = await get_item(itemType, type);
-    }catch(e) {
-        console.log(e);
-        res.status(500).json({error: "Error getting invontary or ticket item"});
-        return;
-    }
-    if(!data) {
-        console.log(e);
-        res.status(500).json({error: "Error getting invontary or ticket item"});
-        return;
-    }
-    const cartdata = {...data, item: item}
+    const itemType = req.query.type;
+    const {ticket, id} = req.body;
 
-    try {
-        await userRef
-            .collection('cart')
-            .add(cartdata);
-        req.session.cart = newCart
-        res.status(200).json({
-            message: "Ticket is Added to the cart",
-            itemLists: req.session.cart,
-        })
-    } catch(e){
-        console.log(e);
-        res.status(500).json({error: "Error getting cart lists"});
-    }
-}
-const get_item = async (coll , document) => {
-    let data = {};
-    const dataRef = db.collection(coll).doc(document);
-    const doc = await dataRef.get();
-    if(!doc.exists) {
-        data = undefined;
-        return data;
-    } else {
-        data.name = doc.data().name;
-        data.description = doc.data().description;
-        data.point = doc.data().point;
-        data.price = doc.data().price;
-        return data;
-    }
-}
-const get_inventory_items = async (itemId) => {
-    let data;
-    const dataRef = db.collection('inventory').doc(itemId);
-    const doc = await dataRef.get();
-    if(!doc.exists) {
-        data = undefined;
-        return data;
-    } else {
-        data.id = itemId;
-        data.name = doc.data().name;
-        data.description = doc.data().description;
-        data.point = doc.data().point;
-        data.price = doc.data().price;
-
-        return data;
-    }
+    let date = new Date().toISOString()
+    let customID = date.replace(/[.,:-]/g,"")
+    const newId = `${customID}-${userId}`
     
-}
+    const item = itemType === 'ticket' ? 
+        ticketList.tickets.filter(x => x.id === id)[0] : undefined;
+    
+        //need to work on this for other items
+
+    if(!req.session.carts) {
+        req.session.carts = []
+    }
+
+    let carts = req.session.carts;
+    const singleItem = {...item, id: newId, date, ticket: ticket, drawDate: `${drawDate(item.type)} 11:59 pm`};
+    carts.push(singleItem);
+    req.session.carts = carts;
+    const pointneeded = carts.reduce((prevPoint, item) => prevPoint + (item.point), 0)
+    res.status(200).json({
+        total: pointneeded,
+        count: carts.length,
+        data: singleItem,
+        alert: {
+            text: 'Added successfully',
+            type: 'success'
+        }
+    })
+})
 
 exports.addCart = addCart;

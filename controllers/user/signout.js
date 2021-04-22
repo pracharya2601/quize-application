@@ -5,10 +5,16 @@ const signout = async (req, res, next) => {
           res.status(500).json({error: "Something went wronf please try again later"})
           return; 
         }
-        console.log(req.session)
-        res.status(200).json({message: "Sign out successfully"}) 
+        res.status(200).json({
+          signIn: false,
+          user: {},
+          alert: {
+            text: 'User not found',
+            type: 'danger'
+        }  
+        }) 
     });
 }
 
 
-exports.signout = signout;
+exports.signout = signout

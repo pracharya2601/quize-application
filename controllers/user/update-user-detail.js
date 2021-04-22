@@ -16,7 +16,13 @@ const updateUserDetail = wrap(async (req, res, next) => {
     const data = req.body;
 
     await subcollectionupdate('users', userId, 'user_data', 'detail', data);
-    res.status(200).json({data: data})
+    res.status(200).json({
+        data: data,
+        alert: {
+            text: 'Updated successfully',
+            type: 'success'
+        }   
+    })
 })
 
 exports.updateUserDetail = updateUserDetail;
