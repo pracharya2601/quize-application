@@ -1,6 +1,5 @@
 const wrap = require('../../middleware/wrap');
-const {db} = require('../../models/googlefirestore');
-const subcollection = require('../../common/subcollection');
+const collectionupdate = require('../../common/collectionupdate');
 const collection = require('../../common/collection');
 const decodedToken = require('../../utils/decodedToken');
 
@@ -15,32 +14,26 @@ const current_user = wrap(async (req, res, next) => {
     const token = req.session.user;
     const decoded = decodedToken(token);
     const userId = decoded.uid;
-    const userRef = db.collection('users').doc(userId);
-    const checktime = new Date(Date.now());
 
     const data = await collection('users', userId);   
-    const cartcount = await subcollection('users', userId, 'user_data', 'cartcount');
-    const quizeinfo = await subcollection('users', userId, 'user_data', 'quize_info');
-
-    const user = {
-      email: data.email,
-      name: data.name,
-      address: data.address,
-      playAccess: quizeinfo && quizeinfo.dailyTotalPlay >= 5 ? false : true,
-      cartcount: cartcount && cartcount.cartcount ? cartcount.cartcount : 0,
-    }
+    // const quizeinfo = await subcollection('users', userId, 'user_data', 'quize_info');
+    // console.log(checktime - quizeinfo.playedAt)
+    const playedTime = new Date(data.playedAt).getTime();
+    const todayDate = new Date().getTime();
   
-    if(quizeinfo && checktime - quizeinfo.playedAt.toDate() > 86400000) {
-      await userRef
-        collection('user_data')
-        .doc('quize_info')
-        .update({
-          dailyTotalPlay: 0
-      })
+    let playAccess = data.dailyTotalPlay && data.dailyTotalPlay >= 5 ? false : true;
+    if(todayDate - playedTime > 86400000) {
+      playAccess = true;
+      await collectionupdate('users', userId, {dailyTotalPlay: 0})
     }
     res.status(200).json({
       signIn: true,
-      user: user,
+      user: {
+        email: data.email,
+        name: data.name,
+        address: data.address,
+        playAccess: playAccess,
+      },
       message: `You are logged in`
     })
 

@@ -1,4 +1,4 @@
-const { db } = require("../models/googlefirestore")
+const { db } = require("../model/fb");
 
 module.exports = async (dbcollection, id, subcollection, documentId) => {
     let doc = await db

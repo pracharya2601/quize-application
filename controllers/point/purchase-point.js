@@ -1,7 +1,9 @@
-const {db} = require("../../models/googlefirestore");
-var jwt = require('jsonwebtoken');
+const subcollectionadd = require("../../common/subcollectionadd");
+const wrap = require("../../middleware/wrap");
+const decodedToken = require("../../utils/decodedToken");
+const { updatePurchasePoints } = require("../../utils/point-helper");
 
-const purchasePoint = async (req, res, next) => {
+const purchasePoint = wrap(async (req, res, next) => {
     if(!req.session.user) {
         res.status(200).json({
             signIn: false,
@@ -10,21 +12,17 @@ const purchasePoint = async (req, res, next) => {
         return;
     }
     const token = req.session.user;
-    const decoded = jwt.verify(token, "user_world");
-    const userRef = db.collection('users').doc(decoded.uid);
-
-    // const {
-    //     point,
-    //     amount,
-    //     id,
-    //     token,
-    // } = req.body;
-
-    //send token and amount to user for fututr verification 
-    //if verification failed
-
+    const decoded = decodedToken(token);
+    const userId = decoded.uid;
 
     /*
+    const {
+            point,
+            amount,
+            id,
+            token,
+        } = req.body;
+
     verify khalti verification
         token, amount
         send header
@@ -69,7 +67,7 @@ const purchasePoint = async (req, res, next) => {
         amount: req.body.amount,
         point: req.body.point,
         date: new Date().toISOString(),
-        status: 'Purchased',
+        status: 'purchased',
         khaltiIdx: 'sdjlksjdlksjds',
         user: {
             idx: 'skdjlksjdklsjd',
@@ -77,63 +75,23 @@ const purchasePoint = async (req, res, next) => {
             mobile: '980767676373',
         },
         state: 'completed' //get this data form khalti verification
+
     }
-    try {
-        await userRef
-        .collection('purchased_point')
-        .doc(req.body.id)
-        .set(verifiedData);
-        await update_final_point(userRef, verifiedData.point);
-        //send email to user
-        //confirmation code
-        res.status(200).json({
-            message: "Thankyou for purchasing the points",
-            data: {
-                date: verifiedData.date,
-                point: verifiedData.point,
-                status: verifiedData.status,
-                id: req.body.id,
-            }
-        })
+    await subcollectionadd('users', userId, 'purchased_point', verifiedData);
+    await updatePurchasePoints(userId, verifiedData.point);
 
-    }catch (e) {
-        res.status(500).json({
-            error:"Error occured while verifying purchased" 
-        })
-    }
-}
-//update on final_point sub collection
-//change the collection to update points
-const update_final_point = async (userRef, point) => {
-    let docRef = userRef
-        .collection('user_points');
-    let doc = await docRef
-        .doc('final_points')
-        .get();
-
-    if(!doc.exists) {
-        return await docRef
-            .doc('final_points')
-            .set({
-               totalpoints: point,
-               totalpointearn: 0,
-               totalpointpurchase: point,
-               totalpointused: 0, 
-            })
-    } else {
-        return await docRef
-            .doc('final_points')
-            .update({
-                totalpoints: doc.data().totalpoints + point,
-                totalpointpurchase: doc.data().totalpointpurchase + point,
-            })
-    }
-}
-
-//purchased_point sub-collection for purchasing points
-//add purchased data to the sub-collection
-
-//send email to the purchased point
-//
+    res.status(200).json({
+        point: {
+            date: verifiedData.date,
+            point: verifiedData.point,
+            status: verifiedData.status,
+            id: req.body.id,
+        },
+        alert: {
+            text: `Thankyou for purchasing points. ${verifiedData.point} points has been added to your account.`,
+            type: 'success'
+        }
+    })
+})
 
 exports.purchasePoint = purchasePoint;

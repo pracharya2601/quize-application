@@ -1,7 +1,7 @@
 const wrap = require('../../middleware/wrap');
 const decodedToken = require('../../utils/decodedToken');
 const {validationResult} = require("express-validator");
-const {hashPass, hashCompare} = require("../../models/hash-password");
+const {hashPass, hashCompare} = require("../../utils/hash-password");
 const {passChangedEmail} = require("../../utils/mailing-service");
 const collectionupdate = require('../../common/collectionupdate');
 const collection = require('../../common/collection');
@@ -39,7 +39,12 @@ const changePassword = wrap(async (req, res, next) => {
     const data = await collection('users', userId);
     const passMatch = await hashCompare(lastpass, data.password);
     if(!passMatch) {
-        res.status(404).json({error: 'Old password is not correct'});
+        res.status(404).json({
+        alert: {
+            text: 'Old password is not correct',
+            type: 'danger'
+        } 
+    });
         return;
     }
 
@@ -55,7 +60,10 @@ const changePassword = wrap(async (req, res, next) => {
     await passChangedEmail(data.email);
 
     res.status(200).json({
-        message: `Your password has been channge`,
+        alert: {
+            text: 'Your password has been channged',
+            type: 'primary'
+        } 
     });
 })
 

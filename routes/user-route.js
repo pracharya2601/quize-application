@@ -2,7 +2,7 @@ const express = require("express");
 const {body} = require('express-validator');
 const router = express.Router();
 
-const {db} = require("../models/googlefirestore");
+const {db} = require("../model/fb");
 
 //import usercontroller
 const {signin} = require('../controllers/user/signin');
@@ -20,7 +20,7 @@ router.get('/', current_user);
 router.post('/signin', [
     body("email")
         .isEmail()
-        .withMessage("Please emter a valid email"),
+        .withMessage("Please enter a valid email"),
     body("password")
         .trim()
         .isLength({min: 3})

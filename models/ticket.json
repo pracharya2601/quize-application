@@ -1,0 +1,24 @@
+{
+  "tickets": [
+    {
+      "id": "HG67tF6HOP89809KKL",
+      "catagory": "ticket",
+      "type": "weekly",
+      "point": 1000,
+      "amt": "Rs 20",
+      "name": "Weekly Lotto",
+      "description": "Rs 100,000",
+      "imageUrl": ["https://i.ibb.co/HGyGW4V/weekly.png"]
+    },
+    {
+      "id": "HG67tF6HOP89809LLK",
+      "catagory": "ticket",
+      "type": "daily",
+      "point": 200,
+      "amt": "Rs 5",
+      "name": "Daily Lotto",
+      "description": "Rs 20,000",
+      "imageUrl": ["https://i.ibb.co/L6hdvMT/Daily.jpg"]
+    }
+  ]
+}

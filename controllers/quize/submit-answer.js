@@ -1,179 +1,88 @@
-const {db} = require("../../models/googlefirestore");
-var jwt = require('jsonwebtoken');
+const decodedToken = require('../../utils/decodedToken');
+const subcollection = require("../../common/subcollection");
+const subcollectionupdate = require("../../common/subcollectionupdate");
+const wrap = require("../../middleware/wrap");
+const {singleQuery} = require('../../common/collectionSnap');
+const { updateEarnedPoints } = require("../../utils/play-quize-helper");
+const { level } = require('../../utils/quize-level')
 
-const levelData = {
-    I : 1,
-    II: 2,
-    III: 4,
-    IV: 8,
-    V: 16,
-    VI: 32,
-    VII: 64,
-    VIII: 128,
-    IX: 256,
-    X: 512,
-    XI: 1024,
-    XII: 2038,
-    XIII: 4096
-}
 
-const submitAnswer = async (req, res, next) => {
+const submitAnswer = wrap(async(req, res, next) => {
     if(!req.session.user) {
-        req.status(200).json({
+        res.status(200).json({
             signIn: false,
             user: {},
         })
         return;
     }
-    const {ans} = req.body;
-    const {quizeSlug} = req.params;
+    const quizeSlug = req.params.quizeSlug;
+    const ans = req.body.ans;
     const newTime = new Date().getTime();
     const token = req.session.user;
-    const decoded = jwt.verify(token, "user_world");
+    const decoded = decodedToken(token);
+    const userId = decoded.uid;
 
-    const userRef = db
-        .collection('users')
-        .doc(decoded.uid);
-
-    let info;
-    try{
-        info = await get_time_lot(userRef, quizeSlug);
-    }catch{
-        res.status(400).json({error: 'Server error please try again later'});
-        //send notification to admin
-        return;
-    }
-
-    if(info.date < newTime) {
-        //update points here
+    const progessQuize = await subcollection('users', userId, 'quize_progess', quizeSlug);
+    if(progessQuize.date < newTime) {
         let point = 0;
-        user_quize_update(userRef, quizeSlug, "timeout", ans, point)
-        res.status(200).json({message: 'Timeout on submit'});
-        return;
-    }
-
-    let data = '';
-    try {
-       data = await get_quize_info(quizeSlug);
-    } catch(e) {
-        console.log(e)
-        res.status(400).json({error: 'Server error please try again later'});
-        //send notification to admin
-        return;
-    }
-
-    if(data.answer !== ans.trim()) {
-        //update everything here
-        let point = 0;
-        user_quize_update(userRef, quizeSlug, "incorrect", ans, point)
-        res.status(200).json({message: 'Your answer is incorrect'});
-        return;
-    }
-
-    const point = levelData[data.level];
-    //check the number of submited answer and send the email abif it is 13
-    try {
-        //add a point here once the answer is correct
-        await update_final_point(userRef, point);
-        await update_on_quize_lot(userRef, info.lotId, point);
-        await user_quize_update(userRef, quizeSlug, "correct", ans, point)
-        res.status(200).json({
-            message: 'Your answer is correct',
-            point: point
-        });
-
-    } catch {
-        res.status(400).json({error: 'Something went wrong please try again later'})
-    }
-
-}
-
-const get_time_lot = async (userRef, quizeSlug) => {
-    const doc = await userRef
-        .collection('quize_progess')
-        .doc(quizeSlug)
-        .get();
-    if(!doc.exists) {
-        return;
-    } else {
-        return {
-            date: doc.data().date,
-            lotId: doc.data().lotId,
-        }
-    }
-}
-
-//change the collection to update points
-const update_final_point = async (userRef, point) => {
-    let docRef = userRef
-        .collection('user_points');
-    let doc = await docRef
-        .doc('final_points')
-        .get();
-
-    if(!doc.exists) {
-        return await docRef
-            .doc('final_points')
-            .set({
-               totalpoints: point,
-               totalpointearn: point,
-               totalpointpurchase: 0,
-               totalpointused: 0, 
-            })
-    } else {
-        return await docRef
-            .doc('final_points')
-            .update({
-                totalpoints: doc.data().totalpoints + point,
-                totalpointearn: doc.data().totalpointearn + point,
-            })
-    }
-}
-
-
-const get_quize_info = async (quizeSlug) => {
-    const data = [];
-    const snapshot = await db
-        .collection('quize_credential')
-        .where('qid', '==', quizeSlug)
-        .get();
-    if(snapshot.empty) {
-        return;
-    } 
-    snapshot.forEach((doc) => {
-        data.push(doc.data());
-    })
-    return data[0];
-}
-
-const user_quize_update = async (userRef, slug,  status, answer, point) => {
-    return await userRef
-        .collection('quize_progess')
-        .doc(slug)
-        .set({
+        await subcollectionupdate('users', userId, 'quize_progess', quizeSlug, {
             date: new Date().toISOString(),
-            status: status,
-            youranswer: answer,
-            point: point
-        }, {merge: true})
-}
+            status: 'timeout',
+            youranswer: ans,
+            point: point,
+        })
+        res.status(400).json({
+            alert: {
+                text: 'Time out! You got 0 point',
+                type: 'danger'
+            }
+        })
+        return;
+    }
+    let quizeCredential = await singleQuery('quize_credential', 'qid', quizeSlug, true);
+    if(quizeCredential.answer !== ans.trim()) {
+        let point = 0;
+        await subcollectionupdate('users', userId, 'quize_progess', quizeSlug, {
+            date: new Date().toISOString(),
+            status: 'incorrect',
+            youranswer: ans,
+            point: point,
+        })
+        res.status(400).json({
+            alert: {
+                text: 'Incorrect answer',
+                type: 'danger'
+            }
+        })
+        return;
+    }
+    const newDate = new Date().toISOString();
+    const point = level[quizeCredential.level];
+    const data = await subcollection('users', userId, 'quize_lots', progessQuize.lotId);
+    await updateEarnedPoints(userId, point);
+    await subcollectionupdate('users', userId, 'quize_lots', progessQuize.lotId, {
+        point: data.point + point,
+    });
+    let dataId = await subcollectionupdate('users', userId, 'quize_progess', quizeSlug, {
+        date: newDate,
+        status: 'correct',
+        youranswer: ans,
+        point: point,
+    })
+    res.status(200).json({
+        point: {
+            id: dataId,
+            point: point,
+            date: newDate,
+            status: 'correct'
 
-const update_on_quize_lot = async (userRef, lotId, point) => {
-    const ref = userRef
-        .collection('quize_lots')
-        .doc(lotId);
-    
-    const doc = await ref.get();
-
-    const new_number = doc.data().totalanswered + 1
-
-    return await ref.update({
-        point: doc.data().point + point,
-        totalanswered: new_number,
+        },
+        alert: {
+            text: `Correct answer! You got +${point} points.`,
+            type: 'success'
+        }
     })
 
-    
-}
+})
 
 exports.submitAnswer = submitAnswer;
-
